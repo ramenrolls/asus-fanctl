@@ -56,6 +56,8 @@ float read_loadavg(const char* path) {
     char *space = strchr(buf, ' ');
     if (space) *space = '\0'; // Null-terminate to get the first float
 
+    return atof(buf);
+}
     // calc average
 float get_averaged_loadavg() {
     float current_loadavg = read_loadavg(CPU_LOAD_PATH);
@@ -68,10 +70,9 @@ float get_averaged_loadavg() {
     }
     avg_load /= LOADAVG_WINDOW;
     
-    smoothed_loadavg = (smoothed_loadavg * (LOADAVG_SMOOTHING_WINDOW - 1) + loadavg) / LOADAVG_SMOOTHING_WINDOW;
+    smoothed_loadavg = (smoothed_loadavg * (LOADAVG_SMOOTHING_WINDOW - 1) + current_loadavg) / LOADAVG_SMOOTHING_WINDOW;
     
     return avg_load;
-}
 }
 
 int main() {
@@ -97,7 +98,7 @@ int main() {
 // NVMe temp1_min= 65000 
         
         // Fan control logic
-        if (nvme_temp >= NVME_TEMP_THRESHOLD + HYSTERESIS_NVME ||
+        if ((nvme_temp >= NVME_TEMP_THRESHOLD + HYSTERESIS_NVME ||
             cpu_temp >= CPU_TEMP_THRESHOLD + HYSTERESIS_CPU||
             (increasing_trend && cpu_load > 0.6)) &&
             fan_mode != 0) {
