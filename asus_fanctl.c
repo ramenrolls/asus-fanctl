@@ -4,18 +4,18 @@
 #include <fcntl.h>
 #include <string.h>
 
-#define FAN_CONTROL_PATH "/sys/devices/platform/asus-nb-wmi/hwmon/hwmon5/pwm1_enable"
+#define PWM1_ENABLE "/sys/devices/platform/asus-nb-wmi/hwmon/hwmon5/pwm1_enable"
 #define NVME_TEMP_PATH "/sys/class/hwmon/hwmon3/temp1_input"
 #define NVME_TEMP_THRESHOLD 72.0
-#define HYSTERESIS_NVME 3
+#define HYST_NVME 3
 
 #define CPU_TEMP_PATH "/sys/class/hwmon/hwmon4/temp1_input"
 #define CPU_TEMP_THRESHOLD 70.0
-#define HYSTERESIS_CPU 3 
+#define HYST_CPU 3 
 
 #define CPU_LOAD_PATH "/proc/loadavg"
 #define CPU_LOAD_THRESHOLD 0.8
-#define LOAD_HYSTERESIS 0.09 // 9 pct
+#define LOAD_HYST 0.09 // 9 pct
 
 #define SLEEP_DURATION 3
 #define LOADAVG_WINDOW 5 // Sample average
@@ -98,19 +98,19 @@ int main() {
 // NVMe temp1_min= 65000 
         
         // Fan control logic
-        if ((nvme_temp >= NVME_TEMP_THRESHOLD + HYSTERESIS_NVME ||
-            cpu_temp >= CPU_TEMP_THRESHOLD + HYSTERESIS_CPU||
+        if ((nvme_temp >= NVME_TEMP_THRESHOLD + HYST_NVME ||
+            cpu_temp >= CPU_TEMP_THRESHOLD + HYST_CPU||
             (increasing_trend && cpu_load > 0.6)) &&
             fan_mode != 0) {
                 fan_mode = 0; // max speed
-            } else if (nvme_temp <= NVME_TEMP_THRESHOLD - HYSTERESIS_NVME ||
-            cpu_temp <= CPU_TEMP_THRESHOLD - HYSTERESIS_CPU ||
-            cpu_load < CPU_LOAD_THRESHOLD - LOAD_HYSTERESIS) {
+            } else if (nvme_temp <= NVME_TEMP_THRESHOLD - HYST_NVME ||
+            cpu_temp <= CPU_TEMP_THRESHOLD - HYST_CPU ||
+            cpu_load < CPU_LOAD_THRESHOLD - LOAD_HYST) {
                 fan_mode = 2; // Automatic (default) 
             }
         
         // Set fan mode
-        fan_control_fd = open(FAN_CONTROL_PATH, O_WRONLY);
+        fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
         if (fan_control_fd < 0) { perror("Error opening pwm1_enable"); exit(1); }
         dprintf(fan_control_fd, "%d", fan_mode);
         close(fan_control_fd);
