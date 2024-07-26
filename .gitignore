@@ -14,3 +14,5 @@
 # Asus C files, as upstream reference files. Keep in working dir
 asus-wmi/
 
+# Documentation writeup, keep to working dir 
+docs/
