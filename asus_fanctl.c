@@ -79,6 +79,8 @@ int main() {
     int fan_control_fd;
     float nvme_temp, cpu_temp, cpu_load;
     int fan_mode;
+    int previous_fan_mode = -1;
+
 fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
     if (fan_control_fd < 0) {
         perror("Error opening pwm1_enable");
@@ -118,5 +120,7 @@ fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
         sleep(SLEEP_DURATION); // Lets not hardcode this
     }
     close(fan_control_fd);
-    return 0;
+    return 0; 
+    }
 }
+
