@@ -79,45 +79,44 @@ int main() {
     int fan_control_fd;
     float nvme_temp, cpu_temp, cpu_load;
     int fan_mode;
-
-    while (1) {
-        // Read NVMe temperature
-        nvme_temp = read_temperature(NVME_TEMP_PATH);
-
-        // Read CPU temperature
-        cpu_temp = read_temperature(CPU_TEMP_PATH);
-
-        // Read CPU load
-        cpu_load = get_averaged_loadavg();
-        // Analyze load average trend 
-        float load_diff = cpu_load - loadavg_history[(loadavg_index - 1 + LOADAVG_WINDOW) % LOADAVG_WINDOW];
-        int increasing_trend = load_diff > 0.1;
-        
-// NVMe temp1_max=76850 // temp readings in milidegree celsius (temp°C * 1000) / 
-// NVMe temp1_crit=79850 
-// NVMe temp1_min= 65000 
-        
-        // Fan control logic
-        if ((nvme_temp >= NVME_TEMP_THRESHOLD + HYST_NVME ||
-            cpu_temp >= CPU_TEMP_THRESHOLD + HYST_CPU||
-            (increasing_trend && cpu_load > 0.6)) &&
-            fan_mode != 0) {
-                fan_mode = 0; // max speed
-            } else if (nvme_temp <= NVME_TEMP_THRESHOLD - HYST_NVME ||
-            cpu_temp <= CPU_TEMP_THRESHOLD - HYST_CPU ||
-            cpu_load < CPU_LOAD_THRESHOLD - LOAD_HYST) {
-                fan_mode = 2; // Automatic (default) 
-            }
-        
-        // Set fan mode
-        fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
-        if (fan_control_fd < 0) { perror("Error opening pwm1_enable"); exit(1); }
-        dprintf(fan_control_fd, "%d", fan_mode);
-        close(fan_control_fd);
-
-        sleep(SLEEP_DURATION); // Lets not hardcode this
-        
+fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
+    if (fan_control_fd < 0) {
+        perror("Error opening pwm1_enable");
+        exit(1);
     }
 
+    while (1) {
+        nvme_temp = read_temperature(NVME_TEMP_PATH); // read temp/load values
+        cpu_temp = read_temperature(CPU_TEMP_PATH);
+        cpu_load = get_averaged_loadavg();
+        
+        // Analyze load average trend 
+        float load_diff = cpu_load - loadavg_history[(loadavg_index - 1 + LOADAVG_WINDOW) % LOADAVG_WINDOW];
+        int increasing_trend = load_diff > 0.3;
+        
+        // Fan control logic
+        if (fan_mode == 0) {
+            if (nvme_temp <= NVME_TEMP_THRESHOLD - HYST_NVME &&
+            cpu_temp <= CPU_TEMP_THRESHOLD - HYST_CPU &&
+            cpu_load < CPU_LOAD_THRESHOLD - LOAD_HYST) {
+                fan_mode = 2;
+            }
+        } else {  
+            if (nvme_temp >= NVME_TEMP_THRESHOLD + HYST_NVME ||
+            cpu_temp >= CPU_TEMP_THRESHOLD + HYST_CPU ||
+            (increasing_trend && cpu_load > 0.7)) {
+                fan_mode = 0;  
+            }
+
+            
+        // setting fan mode, and write if necessary
+        if (fan_mode != previous_fan_mode) { 
+        dprintf(fan_control_fd, "%d", fan_mode);
+            previous_fan_mode = fan_mode;
+        }
+
+        sleep(SLEEP_DURATION); // Lets not hardcode this
+    }
+    close(fan_control_fd);
     return 0;
 }
