@@ -6,10 +6,6 @@ Type=simple
 ExecStart=/usr/local/bin/asus_fanctl
 Restart=on-failure
 
-# Environment variables, future use.
-# Environment=FANCTL_CONFIG_DIR=%h/.config/fanctl 
-# Environment=FANCTL_LOG_FILE=%h/.local/share/fanctl/fanctl.log
-
 # User and Group 
 User=root
 
