@@ -53,13 +53,13 @@ Adjust temperature and load thresholds directly in the `fanctl.c` source
 
 #### Updating
 
-If you make local changes to the `fanctl.c` source code and wish to update the installed binary, re-run `configure.sh`:
+If you made local changes to the `fanctl.c` source, re-run `configure.sh`:
 
 ```bash
 sudo bash configure.sh
 ```
 
-The script will automatically detect the existing binary, stop the `fanctl` service, remove the old binary, recompile the program from the updated source code, and restart the service.
+The script will detect the existing binary, stop the `fanctl` service, remove the old binary, recompile the program from the updated source code, and restart the service.
 
 ### Disclaimer
 
