@@ -51,6 +51,16 @@ git clone https://github.com/ramenrolls/asus_fanctl fanctl && cd fanctl && sudo 
 
 Adjust temperature and load thresholds directly in the `fanctl.c` source
 
+#### Updating
+
+If you make local changes to the `fanctl.c` source code and wish to update the installed binary, re-run `configure.sh`:
+
+```bash
+sudo bash configure.sh
+```
+
+The script will automatically detect the existing binary, stop the `fanctl` service, remove the old binary, recompile the program from the updated source code, and restart the service.
+
 ### Disclaimer
 
 This script is a workaround, not a replacement for Pulse-Width Modulation fan control. It utilizes the available `pwm1_enable` sys-fs interface to interact with the hwmon5 ('cpu_fan') 
