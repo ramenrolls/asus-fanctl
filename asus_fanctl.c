@@ -41,7 +41,7 @@ float read_temperature(const char* path) {
     char buf[16];
     ssize_t num_bytes = read(fd, buf, sizeof(buf) - 1);
     if (num_bytes < 0) { 
-        fprintf(stderr, "Error reading temp %s: %s\n", path strerror(errno));
+        fprintf(stderr, "Error reading temp %s: %s\n", path, strerror(errno));
         }
         close(fd);
         
