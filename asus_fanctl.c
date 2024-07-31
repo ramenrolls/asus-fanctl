@@ -21,9 +21,13 @@
 #define LOADAVG_WINDOW 5 // Sample average
 #define LOADAVG_SMOOTHING_WINDOW 30 
 
+struct FanConfig {
+    float tempThreshold;
+    float hyst;
+    const char *tempPath;
+};
 float loadavg_history[LOADAVG_WINDOW] = {0.0};
 int loadavg_index = 0;
-
 float smoothed_loadavg = 0.0;
 
 float read_temperature(const char* path) {
@@ -73,13 +77,18 @@ float get_averaged_loadavg() {
     smoothed_loadavg = (smoothed_loadavg * (LOADAVG_SMOOTHING_WINDOW - 1) + current_loadavg) / LOADAVG_SMOOTHING_WINDOW;
     
     return avg_load;
-}
+    }
 
 int main() {
     int fan_control_fd;
-    float nvme_temp, cpu_temp, cpu_load;
+    float cpu_load;
     int fan_mode;
     int previous_fan_mode = -1;
+
+struct FanConfig fanConfigs[] = {
+        {NVME_TEMP_THRESHOLD, HYST_NVME, NVME_TEMP_PATH},
+        {CPU_TEMP_THRESHOLD, HYST_CPU, CPU_TEMP_PATH}
+    };
 
 fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
     if (fan_control_fd < 0) {
@@ -88,8 +97,10 @@ fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
     }
 
     while (1) {
-        nvme_temp = read_temperature(NVME_TEMP_PATH); // read temp/load values
-        cpu_temp = read_temperature(CPU_TEMP_PATH);
+        float temps[2] = {
+            read_temperature(fanConfigs[0].tempPath), 
+            read_temperature(fanConfigs[1].tempPath)
+        };
         cpu_load = get_averaged_loadavg();
         
         // Analyze load average trend 
@@ -97,30 +108,31 @@ fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
         int increasing_trend = load_diff > 0.3;
         
         // Fan control logic
-        if (fan_mode == 0) {
-            if (nvme_temp <= NVME_TEMP_THRESHOLD - HYST_NVME &&
-            cpu_temp <= CPU_TEMP_THRESHOLD - HYST_CPU &&
-            cpu_load < CPU_LOAD_THRESHOLD - LOAD_HYST) {
-                fan_mode = 2;
+        fan_mode = 2; // Default to auto/quiet mode
+        for (int i = 0; i < 2; i++) { 
+            if (temps[i] >= fanConfigs[i].tempThreshold + fanConfigs[i].hyst ||
+               (increasing_trend && cpu_load > CPU_LOAD_THRESHOLD + LOAD_HYST)) {
+                fan_mode = 0; // Switch to full speed
+                break;
             }
-        } else {  
-            if (nvme_temp >= NVME_TEMP_THRESHOLD + HYST_NVME ||
-            cpu_temp >= CPU_TEMP_THRESHOLD + HYST_CPU ||
-            (increasing_trend && cpu_load > 0.7)) {
-                fan_mode = 0;  
-            }
+        }
 
             
         // setting fan mode, and write if necessary
-        if (fan_mode != previous_fan_mode) { 
-        dprintf(fan_control_fd, "%d", fan_mode);
-            previous_fan_mode = fan_mode;
-        }
+        if (fan_mode != previous_fan_mode) {
+            ssize_t bytes_written = write(fan_control_fd, &fan_mode, sizeof(fan_mode));
+            if (bytes_written != sizeof(fan_mode)) {
+                perror("Error writing to pwm1_enable");
+                close(fan_control_fd); 
+                return 1;
+            }
 
-        sleep(SLEEP_DURATION); // Lets not hardcode this
+            previous_fan_mode = fan_mode;
+
+        sleep(SLEEP_DURATION); 
     }
+
     close(fan_control_fd);
     return 0; 
     }
 }
-
