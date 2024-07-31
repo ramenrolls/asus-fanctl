@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 
 #define PWM1_ENABLE "/sys/devices/platform/asus-nb-wmi/hwmon/hwmon5/pwm1_enable"
 #define NVME_TEMP_PATH "/sys/class/hwmon/hwmon3/temp1_input"
@@ -32,12 +33,20 @@ float smoothed_loadavg = 0.0;
 
 float read_temperature(const char* path) {
     int fd = open(path, O_RDONLY);
-    if (fd < 0) { perror("Error opening temp file"); exit(1); }
+    if (fd < 0) { 
+        fprintf(stderr, "Error reading temp %s: %s\n", path, strerror(errno));
+        exit (1);
+        }
+
     char buf[16];
-    ssize_t num_bytes = read(fd, buf, sizeof(buf));
-    if (num_bytes < 0) { perror("Error reading temp file"); exit(1); }
-    close(fd);
-    return atof(buf) / 1000.0;
+    ssize_t num_bytes = read(fd, buf, sizeof(buf) - 1);
+    if (num_bytes < 0) { 
+        fprintf(stderr, "Error reading temp %s: %s\n", path strerror(errno));
+        }
+        close(fd);
+        
+        buf[num_bytes] = '\0';
+        return atof(buf) / 1000.0;
 }
 
 float read_loadavg(const char* path) {
@@ -68,13 +77,13 @@ float get_averaged_loadavg() {
     loadavg_history[loadavg_index] = current_loadavg;
     loadavg_index = (loadavg_index + 1) % LOADAVG_WINDOW;
     
-    float avg_load = 0.0;
+    float total_load = 0.0;
     for (int i = 0; i < LOADAVG_WINDOW; i++) {
-        avg_load += loadavg_history[i];
+        total_load += loadavg_history[i];
     }
-    avg_load /= LOADAVG_WINDOW;
-    
-    smoothed_loadavg = (smoothed_loadavg * (LOADAVG_SMOOTHING_WINDOW - 1) + current_loadavg) / LOADAVG_SMOOTHING_WINDOW;
+
+    float avg_load = total_load / LOADAVG_WINDOW;
+    smoothed_loadavg = (smoothed_loadavg * (LOADAVG_SMOOTHING_WINDOW - 1) + avg_load) / LOADAVG_SMOOTHING_WINDOW;
     
     return avg_load;
     }
@@ -85,16 +94,16 @@ int main() {
     int fan_mode;
     int previous_fan_mode = -1;
 
+fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
+    if (fan_control_fd < 0) {
+        fprintf(stderr, "Error opening pwm1_enable: %s\n", strerror(errno));
+        exit(1);
+    }
+
 struct FanConfig fanConfigs[] = {
         {NVME_TEMP_THRESHOLD, HYST_NVME, NVME_TEMP_PATH},
         {CPU_TEMP_THRESHOLD, HYST_CPU, CPU_TEMP_PATH}
     };
-
-fan_control_fd = open(PWM1_ENABLE, O_WRONLY);
-    if (fan_control_fd < 0) {
-        perror("Error opening pwm1_enable");
-        exit(1);
-    }
 
     while (1) {
         float temps[2] = {
