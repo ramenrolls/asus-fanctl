@@ -63,27 +63,30 @@ The script will detect the existing binary, stop the `fanctl` service, remove th
 
 ### Disclaimer
 
-This script is a workaround, not a replacement for Pulse-Width Modulation fan control. It utilizes the available `pwm1_enable` sys-fs interface to interact with the hwmon5 ('cpu_fan') 
+This script is a crude solution to thermal management, not a replacement for Pulse-Width Modulation fan control. It utilizes the available `pwm1_enable` sys-fs interface to interact with the hwmon5 ('cpu_fan') 
 
 hwmon: (pwm-fan) add fan pwm1_enable attribute (https://patchwork.kernel.org/project/linux-hwmon/patch/20201125163242.GA1264232@paju/)
 
 **Limitations**
-
-* **Two Fan Modes:**  Only automatic and maximum mode are available through hwmon/sys-fs interface
-* **Not Full PWM Capability:** Limited by physical hardware
+-  Only automatic and maximum mode are available through hwmon/sys-fs interface and incomplete PWM capabilities
 
 TODO 
 ====
+Explore and refactor code to ACPI, as laptops will not have proper circuitry on motherboard to communicate with lm-sensors and PWM. ACPI remains the viable low level alternative, barring my crude pwm1_enable sysfs interaction.
 
-* **Threshold Fine-tuning:**  Refine default thresholds and give guidelines for customization based on hardware and use cases
-* **Hysteresis:**  Add delay before switching back to automatic mode to prevent fan speed fluctuations
-* **Logging and Debugging:**  Incorporate logging to track temperature, load, and fan mode changes for debugging
-* **Error Handling:**  Expand error handling to cover a wider range of scenarios
+What is ACPI? 
 
-**Longer-Term Goals**
+The standard that allows the OS to discover and configure hardware, manage power and monitors system status.
 
-* **Multiple Fan Modes:**  Explore ways to achieve more granular fan control, potentially through kernel modules?
-* **GPU Monitoring:**  Integrate GPU temperature and load monitoring for comprehensive thermal management
-* **Adaptive Algorithm:**  Implement algorithm that learns from usage patterns and dynamically adjusts thresholds for performance and efficiency
-* **System Integration:**  Potentially integrate with system management tools or dashboards for streamlined experience
+Thermal Management:
+
+ACPI defines thermal zones, which are logical collections of interfaces to temperature sensors, trip points, thermal property information, and cooling controls
+The operating system can make cooling decisions based on the system’s application load, user preferences, and thermal heuristics
+ACPI allows for proactive thermal management, including graceful shutdown of devices or the entire system at critical heat levels
+
+Fan Speed Control:
+
+ACPI fan drivers create attributes in the sysfs directory of the ACPI device, listing properties of fan performance states
+These attributes include control percent, trip point index, speed in RPM, noise level, and power draw
+Users should be able to adjust fan speed using thermal sysfs cooling devices, either by setting it to predefined performance states
 
