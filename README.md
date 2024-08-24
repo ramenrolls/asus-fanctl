@@ -1,7 +1,5 @@
 # Asus Fan Control
 
-This C-based fan control solution provides a duct-tape and gum fix for Asus laptops (and maybe others) inadequate fan management, particularly during high-load compile time.
-
 Laptops are inherently limited by their compact design, and a single fan will struggle to effectively cool hardware running at high capacity
 
 **The idea**
@@ -15,7 +13,7 @@ Program will monitor key temperature readings and CPU load:
 Based on indications, it toggles the fan between two modes:
 
 * **Automatic Mode:**  The default mode, typically reserved to 'low fan speed' for quiet operation. This struggles to maintain optimal cooling when it actually counts. Under heavy workloads leading to thermal throttling or reduced system performance. In essence, its function under stress is negligible and insufficient.
-* **Maximum Speed Mode:**  This mode activates when temperature or load thresholds are exceeded, ramping up fan speed to its maximum to ensure sufficient cooling and combat thermal throttling 
+* **Maximum Speed Mode:**  This mode activates when temperature or load thresholds are exceeded, ramping up fan speed to its maximum to ensure cooling and fight thermal throttling 
 
 ## Installation
 
@@ -72,7 +70,8 @@ hwmon: (pwm-fan) add fan pwm1_enable attribute (https://patchwork.kernel.org/pro
 
 TODO 
 ====
-Explore and refactor code to ACPI, as laptops will not have proper circuitry on motherboard to communicate with lm-sensors and PWM. ACPI remains the viable low level alternative, barring my crude pwm1_enable sysfs interaction.
+Explore and refactor code to ACPI, as laptops will not have proper circuitry on motherboard to communicate with lm-sensors and PWM. ACPI remains the viable low level alternative, barring the crude pwm1_enable sysfs interaction.
+
 
 What is ACPI? 
 
